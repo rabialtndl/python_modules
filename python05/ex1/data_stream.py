@@ -1,4 +1,4 @@
-import typing  
+import typing
 import abc
 
 
@@ -45,14 +45,13 @@ class NumericProcessor(DataProcessor):
     def ingest(self, data: int | float | list[int | float]) -> None:
         if not self.validate(data):
             raise ValueError(" Got exception: Improper numeric data")
-        
+
         if isinstance(data, list):
             for item in data:
                 packet = (self._rank, str(item))
                 self._storage.append(packet)
                 self._rank += 1
                 self._total_processed += 1
-                
         else:
             packet = (self._rank, str(data))
             self._storage.append(packet)
@@ -74,7 +73,6 @@ class TextProcessor(DataProcessor):
     def ingest(self, data: str | list[str]) -> None:
         if not self.validate(data):
             raise ValueError(" Got exception: Improper text data")
-        
         if isinstance(data, list):
             for item in data:
                 packet = (self._rank, str(item))
@@ -110,7 +108,7 @@ class LogProcessor(DataProcessor):
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
         if not self.validate(data):
             raise ValueError(" Got exception: Improper log data")
-        
+
         if isinstance(data, list):
             for item in data:
                 log_str = str(item)
@@ -128,11 +126,11 @@ class LogProcessor(DataProcessor):
 
 class DataStream:
     def __init__(self) -> None:
-        self._processor : list[DataProcessor] = []
-    
+        self._processor: list[DataProcessor] = []
+
     def register_processor(self, proc: DataProcessor) -> None:
         self._processor.append(proc)
-    
+
     def process_stream(self, stream: list[typing.Any]) -> None:
         for element in stream:
             processor_founded = False
@@ -142,48 +140,74 @@ class DataStream:
                     processor_founded = True
                     break
             if not processor_founded:
-                print(f"Can't process element in stream: {element}")        
-    
-    def print_processors_stats(self) -> None:     
+                print(f"DataStream error - "
+                      f"Can't process element in stream: {element}")
+
+    def print_processors_stats(self) -> None:
         if not self._processor:
-            print("No processor found, no data")        
+            print("No processor found, no data")
             return
-    
+
         for process in self._processor:
             total, remaining = process.get_stats()
             if process.__class__.__name__ == "NumericProcessor":
-                print(f" Numeric Processor: total {total} items processed, remaining {remaining} on processor")
+                print(f"Numeric Processor: total {total} items processed,"
+                      f" remaining {remaining} on processor")
             elif process.__class__.__name__ == "TextProcessor":
-                print(f" Text Processor: total {total} items processed, remaining {remaining} on processor")
+                print(f"Text Processor: total {total} items processed, "
+                      f" remaining {remaining} on processor")
             elif process.__class__.__name__ == "LogProcessor":
-                print(f" Log Processor: total {total} items processed, remaining {remaining} on processor")
+                print(f"Log Processor: total {total} items processed,"
+                      f" remaining {remaining} on processor")
 
 
 def main() -> None:
-    print("=== Code Nexus - Data Stream ===\n")
-    print("Initialize Data Stream...\n== DataStream statistics ==")
-    
+    print("=== Code Nexus Data Stream ===\n")
+    print("Initialize Data Stream..")
+
     stream_manager = DataStream()
     stream_manager.print_processors_stats()
-    
+
     print("\nRegistering Numeric Processor\n")
-    
-    numeric_process = NumericProcessor()
-    stream_manager.register_processor(numeric_process)
-    
+    num_proc = NumericProcessor()
+    stream_manager.register_processor(num_proc)
+
     test_batch = [
-        "Hello world", 
-        [3.14, 1, 2.71], 
-        [
-            {'log_level': 'WARNING', 'log_message': 'Telnet access! Use ssh instead'}, 
-            {'log_level': 'INFO', 'log_message': 'User wil is connected'}
-        ],
-        42, 
+        "Hello world",
+        [3.14, 1, 2.71],
+        [{'log_level': 'WARNING',
+          'log_message': 'Telnet access! Use ssh instead'},
+         {'log_level': 'INFO', 'log_message': 'User wil is connected'}],
+        42,
         ["Hi", "five"]
     ]
-    
+
     print("Send first batch of data on stream:")
     stream_manager.process_stream(test_batch)
+    print("== DataStream statistics ==")
+    stream_manager.print_processors_stats()
+
+    print("\nRegistering other data processors")
+    text_proc = TextProcessor()
+    log_proc = LogProcessor()
+    stream_manager.register_processor(text_proc)
+    stream_manager.register_processor(log_proc)
+
+    print("Send the same batch again")
+    stream_manager.process_stream(test_batch)
+    stream_manager.print_processors_stats()
+
+    print("\nConsume some elements from the data processors:"
+          "Numeric 3, Text 2, Log 1")
+    print("== DataStream statistics ==")
+
+    for _ in range(3):
+        num_proc.output()
+    for _ in range(2):
+        text_proc.output()
+    for _ in range(1):
+        log_proc.output()
+
     stream_manager.print_processors_stats()
 
 
