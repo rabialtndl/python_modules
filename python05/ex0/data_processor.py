@@ -1,4 +1,4 @@
-from typing import Any
+import typing
 import abc
 
 
@@ -8,11 +8,11 @@ class DataProcessor(abc.ABC):
         self._rank: int = 0
 
     @abc.abstractmethod
-    def validate(self, data: Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         pass
 
     @abc.abstractmethod
-    def ingest(self, data: Any) -> None:
+    def ingest(self, data: typing.Any) -> None:
         pass
 
     def output(self) -> tuple[int, str]:
@@ -25,7 +25,7 @@ class DataProcessor(abc.ABC):
 
 
 class NumericProcessor(DataProcessor):
-    def validate(self, data: Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, (int, float)) and not isinstance(data, bool):
             return True
         if isinstance(data, list):
@@ -48,7 +48,7 @@ class NumericProcessor(DataProcessor):
 
 
 class TextProcessor(DataProcessor):
-    def validate(self, data: Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, str):
             return True
         if isinstance(data, list):
@@ -68,7 +68,7 @@ class TextProcessor(DataProcessor):
 
 
 class LogProcessor(DataProcessor):
-    def validate(self, data: Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, dict):
             for key, value in data.items():
                 if not isinstance(key, str) or not isinstance(value, str):

@@ -2,6 +2,32 @@ import typing
 import abc
 
 
+class ExportPlugin(typing.Protocol):
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        ...
+
+class CSVPlugin:
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        values = [text for rank, text in data]
+        csv_string = ",".join(values)
+        print("CSV Output:")
+        print(csv_string)
+
+
+class JSONPlugin:
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        json_parts = []
+        for rank, text in data:
+            part = f'"item_{rank}": "{text}"'
+            json_parts.append(part)
+
+        json_string = "{" + ", ".join(json_parts) + "}"
+        
+        print("JSON Output:")
+        print(json_string)
+        
+
+
 class DataProcessor(abc.ABC):
     def __init__(self) -> None:
         self._storage: list[tuple[int, str]] = []
@@ -160,56 +186,23 @@ class DataStream:
                 print(f"Log Processor: total {total} items processed,"
                       f" remaining {remaining} on processor")
 
+    def output_pipeline(self, nb: int, plugin: ExportPlugin) -> None:
+        for processor in self._processor:
+            data = []
+            for _ in range(nb):
+                if not processor._data:
+                    break
+                item = processor.output()
+                data.append(item)
+            if data:
+                plugin.process_output(data)
 
+    
 def main() -> None:
-    print("=== Code Nexus Data Stream ===\n")
-    print("Initialize Data Stream..")
+    print("=== Code Nexus - Data Pipeline ===\n Initialize Data Stream... \n == DataStream statistics ==")
+    numeric_process = NumericProcessor()
 
-    stream_manager = DataStream()
-    stream_manager.print_processors_stats()
-
-    print("\nRegistering Numeric Processor\n")
-    num_proc = NumericProcessor()
-    stream_manager.register_processor(num_proc)
-
-    test_batch = [
-        "Hello world",
-        [3.14, 1, 2.71],
-        [{'log_level': 'WARNING',
-          'log_message': 'Telnet access! Use ssh instead'},
-         {'log_level': 'INFO', 'log_message': 'User wil is connected'}],
-        42,
-        ["Hi", "five"]
-    ]
-
-    print("Send first batch of data on stream:")
-    stream_manager.process_stream(test_batch)
-    print("== DataStream statistics ==")
-    stream_manager.print_processors_stats()
-
-    print("\nRegistering other data processors")
-    text_proc = TextProcessor()
-    log_proc = LogProcessor()
-    stream_manager.register_processor(text_proc)
-    stream_manager.register_processor(log_proc)
-
-    print("Send the same batch again")
-    stream_manager.process_stream(test_batch)
-    stream_manager.print_processors_stats()
-
-    print("\nConsume some elements from the data processors:"
-          "Numeric 3, Text 2, Log 1")
-    print("== DataStream statistics ==")
-
-    for _ in range(3):
-        num_proc.output()
-    for _ in range(2):
-        text_proc.output()
-    for _ in range(1):
-        log_proc.output()
-
-    stream_manager.print_processors_stats()
-
+    
 
 if __name__ == "__main__":
     main()
