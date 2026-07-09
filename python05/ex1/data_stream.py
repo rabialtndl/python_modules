@@ -44,19 +44,16 @@ class NumericProcessor(DataProcessor):
 
     def ingest(self, data: int | float | list[int | float]) -> None:
         if not self.validate(data):
-            raise ValueError(" Got exception: Improper numeric data")
+            raise ValueError("Improper numeric data")
 
-        if isinstance(data, list):
-            for item in data:
-                packet = (self._rank, str(item))
-                self._storage.append(packet)
-                self._rank += 1
-                self._total_processed += 1
-        else:
-            packet = (self._rank, str(data))
-            self._storage.append(packet)
-            self._rank += 1
+        items = data if isinstance(data, list) else [data]
+
+        for item in items:
+            packet = (self._rank, str(item))
+            self._storage = self._storage + [packet]
+            self._rank = self._rank + 1
             self._total_processed += 1
+
 
 
 class TextProcessor(DataProcessor):
@@ -72,18 +69,16 @@ class TextProcessor(DataProcessor):
 
     def ingest(self, data: str | list[str]) -> None:
         if not self.validate(data):
-            raise ValueError(" Got exception: Improper text data")
-        if isinstance(data, list):
-            for item in data:
-                packet = (self._rank, str(item))
-                self._storage.append(packet)
-                self._rank += 1
-                self._total_processed += 1
-        else:
-            packet = (self._rank, str(data))
-            self._storage.append(packet)
-            self._rank += 1
+            raise ValueError("Improper text data")
+
+        items = data if isinstance(data, list) else [data]
+
+        for item in items:
+            packet = (self._rank, str(item))
+            self._storage = self._storage + [packet]
+            self._rank = self._rank + 1
             self._total_processed += 1
+
 
 
 class LogProcessor(DataProcessor):
@@ -107,20 +102,18 @@ class LogProcessor(DataProcessor):
 
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
         if not self.validate(data):
-            raise ValueError(" Got exception: Improper log data")
+            raise ValueError("Improper log data")
 
-        if isinstance(data, list):
-            for item in data:
-                log_str = str(item)
-                packet = (self._rank, log_str)
-                self._storage.append(packet)
-                self._rank += 1
-                self._total_processed += 1
-        else:
-            log_str = str(data)
+        items = data if isinstance(data, list) else [data]
+
+        for item in items:
+            log_str = (
+                f"{item.get('log_level', '')}: "
+                f"{item.get('log_message', '')}"
+            )
             packet = (self._rank, log_str)
-            self._storage.append(packet)
-            self._rank += 1
+            self._storage = self._storage + [packet]
+            self._rank = self._rank + 1
             self._total_processed += 1
 
 
@@ -133,13 +126,13 @@ class DataStream:
 
     def process_stream(self, stream: list[typing.Any]) -> None:
         for element in stream:
-            processor_founded = False
+            processor_found = False
             for processor in self._processor:
                 if processor.validate(element):
                     processor.ingest(element)
-                    processor_founded = True
+                    processor_found = True
                     break
-            if not processor_founded:
+            if not processor_found:
                 print(f"DataStream error - "
                       f"Can't process element in stream: {element}")
 
@@ -162,10 +155,11 @@ class DataStream:
 
 
 def main() -> None:
-    print("=== Code Nexus Data Stream ===\n")
+    print("=== Code Nexus - Data Stream ===\n")
     print("Initialize Data Stream..")
 
     stream_manager = DataStream()
+    print("== DataStream statistics ==")
     stream_manager.print_processors_stats()
 
     print("\nRegistering Numeric Processor\n")
