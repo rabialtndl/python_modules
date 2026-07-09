@@ -35,11 +35,11 @@ class DataProcessor(abc.ABC):
         self._total_processed: int = 0
 
     @abc.abstractmethod
-    def validate(self, data: typing.typing.Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         pass
 
     @abc.abstractmethod
-    def ingest(self, data: typing.typing.Any) -> None:
+    def ingest(self, data: typing.Any) -> None:
         pass
 
     def output(self) -> tuple[int, str]:
@@ -55,7 +55,7 @@ class DataProcessor(abc.ABC):
 
 
 class NumericProcessor(DataProcessor):
-    def validate(self, data: typing.typing.Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, (int, float)) and not isinstance(data, bool):
             return True
         if isinstance(data, list):
@@ -86,7 +86,7 @@ class NumericProcessor(DataProcessor):
 
 
 class TextProcessor(DataProcessor):
-    def validate(self, data: typing.typing.Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, str):
             return True
         if isinstance(data, list):
@@ -113,7 +113,7 @@ class TextProcessor(DataProcessor):
 
 
 class LogProcessor(DataProcessor):
-    def validate(self, data: typing.typing.Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, dict):
             for key, value in data.items():
                 if not isinstance(key, str) or not isinstance(value, str):
@@ -131,19 +131,19 @@ class LogProcessor(DataProcessor):
             return True
         return False
 
-    def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
+    def ingest(self, data: typing.Any) -> None:
         if not self.validate(data):
-            raise ValueError(" Got exception: Improper log data")
+            raise ValueError("Improper log data")
 
         if isinstance(data, list):
             for item in data:
-                log_str = str(item)
+                log_str = f"{item['log_level']}: {item['log_message']}"
                 packet = (self._rank, log_str)
                 self._storage.append(packet)
                 self._rank += 1
                 self._total_processed += 1
         else:
-            log_str = str(data)
+            log_str = f"{data['log_level']}: {data['log_message']}"
             packet = (self._rank, log_str)
             self._storage.append(packet)
             self._rank += 1
@@ -157,7 +157,7 @@ class DataStream:
     def register_processor(self, proc: DataProcessor) -> None:
         self._processor.append(proc)
 
-    def process_stream(self, stream: list[typing.typing.Any]) -> None:
+    def process_stream(self, stream: list[typing.Any]) -> None:
         for element in stream:
             processor_founded = False
             for processor in self._processor:
@@ -190,7 +190,7 @@ class DataStream:
         for processor in self._processor:
             data = []
             for _ in range(nb):
-                if not processor._data:
+                if not processor._storage:
                     break
                 item = processor.output()
                 data.append(item)
@@ -199,10 +199,82 @@ class DataStream:
 
     
 def main() -> None:
-    print("=== Code Nexus - Data Pipeline ===\n Initialize Data Stream... \n == DataStream statistics ==")
-    numeric_process = NumericProcessor()
-
+    print("=== Code Nexus - Data Pipeline ===\n")
+    print("Initialize Data Stream...\n")
     
+    stream = DataStream()
+    
+    print("== DataStream statistics ==")
+    stream.print_processors_stats()
+    
+    print("\nRegistering Processors\n")
+    num_proc = NumericProcessor()
+    text_proc = TextProcessor()
+    log_proc = LogProcessor()
+    
+    stream.register_processor(num_proc)
+    stream.register_processor(text_proc)
+    stream.register_processor(log_proc)
+    
+    batch1 = [
+        "Hello world",
+        [3.14, -1, 2.71],
+        [
+            {"log_level": "WARNING", "log_message": "Telnet access! Use ssh instead"},
+            {"log_level": "INFO", "log_message": "User wil is connected"}
+        ],
+        42,
+        ["Hi", "five"]
+    ]
+    
+    print(
+        "Send first batch of data on stream: ['Hello world', "
+        "[3.14, -1, 2.71], [{'log_level': 'WARNING', 'log_message': "
+        "'Telnet access! Use ssh instead'}, {'log_level': 'INFO', "
+        "'log_message': 'User wil is connected'}], 42, ['Hi', 'five']]"
+    )
+    stream.process_stream(batch1)
+    
+    print("\n== DataStream statistics ==")
+    stream.print_processors_stats()
+    
+    print("\nSend 3 processed data from each processor to a CSV plugin:")
+    csv_plugin = CSVPlugin()
+    stream.output_pipeline(3, csv_plugin)
+    
+    print("\n== DataStream statistics ==")
+    stream.print_processors_stats()
+    
+    batch2 = [
+        21,
+        ["I love AI", "LLMs are wonderful", "Stay healthy"],
+        [
+            {"log_level": "ERROR", "log_message": "500 server crash"},
+            {"log_level": "NOTICE", "log_message": "Certificate expires in 10 days"}
+        ],
+        [32, 42, 64, 84, 128, 168],
+        "World hello"
+    ]
+    
+    print(
+        "\nSend another batch of data: [21, ['I love AI', 'LLMs are "
+        "wonderful', 'Stay healthy'], [{'log_level': 'ERROR', "
+        "'log_message': '500 server crash'}, {'log_level': 'NOTICE', "
+        "'log_message': 'Certificate expires in 10 days'}], "
+        "[32, 42, 64, 84, 128, 168], 'World hello']"
+    )
+    stream.process_stream(batch2)
+    
+    print("\n== DataStream statistics ==")
+    stream.print_processors_stats()
+    
+    print("\nSend 5 processed data from each processor to a JSON plugin:")
+    json_plugin = JSONPlugin()
+    stream.output_pipeline(5, json_plugin)
+    
+    print("\n== DataStream statistics ==")
+    stream.print_processors_stats()
+
 
 if __name__ == "__main__":
     main()

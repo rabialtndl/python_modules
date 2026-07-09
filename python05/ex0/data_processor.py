@@ -142,6 +142,7 @@ def main() -> None:
 
     for log in log_data:
         log_process.ingest(log)
+    print(f" Processing data: {log_data}")
     print(" Extracting 2 values...")
     for _ in range(0, 2):
         rank, value = log_process.output()

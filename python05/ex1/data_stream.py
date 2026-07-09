@@ -9,11 +9,11 @@ class DataProcessor(abc.ABC):
         self._total_processed: int = 0
 
     @abc.abstractmethod
-    def validate(self, data: typing.typing.Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         pass
 
     @abc.abstractmethod
-    def ingest(self, data: typing.typing.Any) -> None:
+    def ingest(self, data: typing.Any) -> None:
         pass
 
     def output(self) -> tuple[int, str]:
@@ -29,7 +29,7 @@ class DataProcessor(abc.ABC):
 
 
 class NumericProcessor(DataProcessor):
-    def validate(self, data: typing.typing.Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, (int, float)) and not isinstance(data, bool):
             return True
         if isinstance(data, list):
@@ -60,7 +60,7 @@ class NumericProcessor(DataProcessor):
 
 
 class TextProcessor(DataProcessor):
-    def validate(self, data: typing.typing.Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, str):
             return True
         if isinstance(data, list):
@@ -87,7 +87,7 @@ class TextProcessor(DataProcessor):
 
 
 class LogProcessor(DataProcessor):
-    def validate(self, data: typing.typing.Any) -> bool:
+    def validate(self, data: typing.Any) -> bool:
         if isinstance(data, dict):
             for key, value in data.items():
                 if not isinstance(key, str) or not isinstance(value, str):
@@ -131,7 +131,7 @@ class DataStream:
     def register_processor(self, proc: DataProcessor) -> None:
         self._processor.append(proc)
 
-    def process_stream(self, stream: list[typing.typing.Any]) -> None:
+    def process_stream(self, stream: list[typing.Any]) -> None:
         for element in stream:
             processor_founded = False
             for processor in self._processor:
@@ -194,10 +194,11 @@ def main() -> None:
     stream_manager.register_processor(log_proc)
 
     print("Send the same batch again")
+    print("== DataStream statistics ==")
     stream_manager.process_stream(test_batch)
     stream_manager.print_processors_stats()
 
-    print("\nConsume some elements from the data processors:"
+    print("\nConsume some elements from the data processors: "
           "Numeric 3, Text 2, Log 1")
     print("== DataStream statistics ==")
 
