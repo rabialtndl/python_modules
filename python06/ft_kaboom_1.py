@@ -1,9 +1,11 @@
-print("=== Kaboom 1 ===")
-print("Access to alchemy/grimoire/dark_spellbook.py directly")
-print("Test import now - THIS WILL RAISE AN UNCAUGHT EXCEPTION")
+def main() -> None:
+    print("=== Kaboom 1 ===")
+    print("Access to alchemy/grimoire/dark_spellbook.py directly")
+    print("Test import now - THIS WILL RAISE AN UNCAUGHT EXCEPTION")
+    from alchemy.grimoire.dark_spellbook import dark_spell_record
+    print(f"Testing record dark spell: "
+          f"{dark_spell_record('Darkness', 'bats and frogs')}")
 
-from alchemy.grimoire.dark_spellbook import dark_spell_record
-try:
-    print(f"Testing record dark spell: {dark_spell_record('Darkness', 'bats and frogs')}")
-except ImportError as ex:
-    print(f"ImportError: {ex}")
+
+if __name__ == "__main__":
+    main()
